@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "timingapp"
+version = "0.1.0"
+description = "Python client for the Timing macOS app SQLite database"
+requires-python = ">=3.12"
+dependencies = ["sqlalchemy>=2.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-cov>=5.0", "mypy>=1.10", "sqlalchemy[mypy]>=2.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=timingapp --cov-report=term-missing --cov-fail-under=90"
+markers = ["macos: requires macOS Timing database"]
+
+[tool.coverage.run]
+source = ["src/timingapp"]
+branch = true
+
+[tool.mypy]
+plugins = ["sqlalchemy.ext.mypy.plugin"]
+strict = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/timingapp"]
