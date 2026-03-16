@@ -6,6 +6,7 @@ build-backend = "uv_build"
 name = "timingapp"
 version = "0.1.0"
 description = "Python client for the Timing macOS app SQLite database"
+readme = "README.md"
 requires-python = ">=3.12"
 dependencies = ["sqlalchemy>=2.0"]
 
