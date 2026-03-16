@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Integer, String, select
+from sqlalchemy import Boolean, Integer, LargeBinary, String, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from timingapp._base import TimingBase
@@ -14,10 +14,12 @@ class Filter(TimingBase):
     __tablename__ = "Filter"
 
     id: Mapped[int] = mapped_column("id", Integer, primary_key=True)
-    name: Mapped[str | None] = mapped_column("name", String)
     parentID: Mapped[int | None] = mapped_column("parentID", Integer)
-    is_sample: Mapped[int | None] = mapped_column("is_sample", Integer)
-    criteria: Mapped[Any | None] = mapped_column("criteria", JSONText)
+    listPosition: Mapped[int] = mapped_column("listPosition", Integer)
+    title: Mapped[str] = mapped_column("title", String)
+    predicate: Mapped[bytes | None] = mapped_column("predicate", LargeBinary)
+    isSample: Mapped[bool] = mapped_column("isSample", Boolean, default=False)
+    property_bag: Mapped[Any | None] = mapped_column("property_bag", JSONText)
 
     parent: Mapped["Filter | None"] = relationship(
         "Filter",
@@ -35,4 +37,4 @@ class Filter(TimingBase):
 
     @classmethod
     def samples(cls) -> "Select[tuple[Filter]]":
-        return select(cls).where(cls.is_sample == 1)
+        return select(cls).where(cls.isSample == True)  # noqa: E712

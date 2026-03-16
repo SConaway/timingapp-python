@@ -35,6 +35,10 @@ class Database:
         def _block(_s: Any, _fc: Any, _i: Any) -> None:
             raise ReadOnlyError("read-only database")
 
+    def close(self) -> None:
+        """Dispose the connection pool and close all SQLite connections."""
+        self._engine.dispose()
+
     @contextmanager
     def session(self) -> Generator[Session, None, None]:
         with self._Session() as sess:

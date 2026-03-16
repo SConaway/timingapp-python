@@ -1,4 +1,3 @@
-import pytest
 from sqlalchemy import select
 
 from timingapp._database import Database
@@ -43,11 +42,12 @@ class TestApplication:
             apps = sess.scalars(select(Application)).all()
             assert len(apps) >= 2
 
-    def test_bundle_identifier(self, db: Database):
+    def test_title_field(self, db: Database):
         with db.session() as sess:
             app = sess.get(Application, 1)
             assert app is not None
             assert app.bundleIdentifier == "com.apple.Safari"
+            assert app.title == "Safari"
 
 
 class TestDevice:
@@ -60,13 +60,13 @@ class TestDevice:
         with db.session() as sess:
             device = sess.get(Device, 1)
             assert device is not None
-            assert device.name == "MacBook Pro"
+            assert device.displayName == "MacBook Pro"
 
-    def test_non_local_device(self, db: Database):
+    def test_global_id(self, db: Database):
         with db.session() as sess:
             device = sess.get(Device, 2)
             assert device is not None
-            assert device.local_device == 0
+            assert device.globalID == 200
 
 
 class TestFilter:
@@ -79,7 +79,7 @@ class TestFilter:
         with db.session() as sess:
             samples = sess.scalars(Filter.samples()).all()
             assert len(samples) == 1
-            assert samples[0].name == "Sample Filter"
+            assert samples[0].title == "Sample Filter"
 
     def test_self_referential_parent(self, db: Database):
         with db.session() as sess:
@@ -101,7 +101,13 @@ class TestIntegration:
         with db.session() as sess:
             integrations = sess.scalars(select(Integration)).all()
             assert len(integrations) >= 1
-            assert integrations[0].name == "Jira"
+            assert integrations[0].title == "Jira"
+
+    def test_type_field(self, db: Database):
+        with db.session() as sess:
+            integration = sess.get(Integration, 1)
+            assert integration is not None
+            assert integration.type == "jira"
 
 
 class TestIntegrationLogResult:
@@ -111,7 +117,6 @@ class TestIntegrationLogResult:
             results = sess.scalars(select(IntegrationLogResult)).all()
             assert len(results) >= 1
             result = results[0]
-            assert result.result == "success"
-            assert result.details == {"items": 5}
+            assert result.result == 0
             assert result.timestamp is not None
             assert result.timestamp.tzinfo == timezone.utc

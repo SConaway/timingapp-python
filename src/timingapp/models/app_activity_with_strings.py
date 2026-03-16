@@ -11,11 +11,14 @@ class AppActivityWithStrings(TimingBase):
     __tablename__ = "AppActivityWithStrings"
 
     id: Mapped[int] = mapped_column("id", Integer, primary_key=True)
+    localDeviceID: Mapped[int | None] = mapped_column("localDeviceID", Integer)
     startDate: Mapped[datetime | None] = mapped_column("startDate", UnixTimestamp)
     endDate: Mapped[datetime | None] = mapped_column("endDate", UnixTimestamp)
-    bundleIdentifier: Mapped[str | None] = mapped_column("bundleIdentifier", String)
-    app_name: Mapped[str | None] = mapped_column("app_name", String)
+    applicationID: Mapped[int | None] = mapped_column("applicationID", Integer)
+    titleID: Mapped[int | None] = mapped_column("titleID", Integer)
+    pathID: Mapped[int | None] = mapped_column("pathID", Integer)
+    # The view selects Title.stringValue then Path.stringValue; SQLite names
+    # the duplicate "stringValue:1" in the virtual column list.
     title_string: Mapped[str | None] = mapped_column("stringValue", String, key="title_string")
+    path_string: Mapped[str | None] = mapped_column("stringValue:1", String, key="path_string")
     projectID: Mapped[int | None] = mapped_column("projectID", Integer)
-    project_title: Mapped[str | None] = mapped_column("project_title", String)
-    deviceID: Mapped[int | None] = mapped_column("deviceID", Integer)

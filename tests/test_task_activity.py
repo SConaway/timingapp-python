@@ -30,6 +30,13 @@ class TestTaskActivity:
             assert activity is not None
             assert activity.property_bag == {"tag": "dev"}
 
+    def test_title_and_notes(self, db: Database):
+        with db.session() as sess:
+            activity = sess.get(TaskActivity, 1)
+            assert activity is not None
+            assert activity.title == "Feature work"
+            assert activity.notes == "Working on feature"
+
     def test_timestamps_are_utc(self, db: Database):
         with db.session() as sess:
             activity = sess.get(TaskActivity, 2)

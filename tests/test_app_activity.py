@@ -32,7 +32,7 @@ class TestAppActivity:
             activity = sess.get(AppActivity, 1)
             assert activity is not None
             assert activity.device is not None
-            assert activity.device.name == "MacBook Pro"
+            assert activity.device.displayName == "MacBook Pro"
 
     def test_application_relationship(self, db: Database):
         with db.session() as sess:
@@ -48,21 +48,28 @@ class TestAppActivity:
             assert activity.project is not None
             assert activity.project.title == "Root Project"
 
-    def test_non_deleted_has_no_deleted_at(self, db: Database):
+    def test_non_deleted_is_false(self, db: Database):
         with db.session() as sess:
             activity = sess.get(AppActivity, 1)
             assert activity is not None
-            assert activity.deleted_at is None
+            assert activity.isDeleted is False
 
 
 class TestAppActivityWithStrings:
     def test_query(self, db: Database):
         with db.session() as sess:
+            # View filters out isDeleted=1, so only row 1 appears
             activities = sess.scalars(select(AppActivityWithStrings)).all()
-            assert len(activities) >= 1
+            assert len(activities) == 1
 
     def test_title_string(self, db: Database):
         with db.session() as sess:
             activity = sess.get(AppActivityWithStrings, 1)
             assert activity is not None
             assert activity.title_string == "Google - Safari"
+
+    def test_path_string(self, db: Database):
+        with db.session() as sess:
+            activity = sess.get(AppActivityWithStrings, 1)
+            assert activity is not None
+            assert activity.path_string == "/Applications/Safari.app"

@@ -2,6 +2,8 @@ from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from timingapp._base import TimingBase
+from timingapp._types import JSONText
+from typing import Any
 
 
 class Application(TimingBase):
@@ -9,6 +11,6 @@ class Application(TimingBase):
 
     id: Mapped[int] = mapped_column("id", Integer, primary_key=True)
     bundleIdentifier: Mapped[str | None] = mapped_column("bundleIdentifier", String)
-    name: Mapped[str | None] = mapped_column("name", String)
-    category: Mapped[str | None] = mapped_column("category", String)
-    is_productivity_app: Mapped[int | None] = mapped_column("is_productivity_app", Integer)
+    executable: Mapped[str | None] = mapped_column("executable", String)
+    title: Mapped[str | None] = mapped_column("title", String)
+    property_bag: Mapped[Any | None] = mapped_column("property_bag", JSONText)

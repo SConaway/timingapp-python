@@ -1,11 +1,11 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from timingapp._base import TimingBase
-from timingapp._types import JSONText, UnixTimestamp
+from timingapp._types import UnixTimestamp
 
 if TYPE_CHECKING:
     from timingapp.models.integration import Integration
@@ -15,11 +15,13 @@ class IntegrationLogResult(TimingBase):
     __tablename__ = "integration_log_result"
 
     id: Mapped[int] = mapped_column("id", Integer, primary_key=True)
-    integrationID: Mapped[int | None] = mapped_column("integrationID", Integer)
+    integration_id: Mapped[int] = mapped_column("integration_id", Integer)
+    result: Mapped[int] = mapped_column("result", Integer)
+    error_message: Mapped[str | None] = mapped_column("error_message", String)
     timestamp: Mapped[datetime | None] = mapped_column("timestamp", UnixTimestamp)
-    result: Mapped[str | None] = mapped_column("result", String)
-    details: Mapped[Any | None] = mapped_column("details", JSONText)
 
     integration: Mapped["Integration | None"] = relationship(
-        "Integration", foreign_keys=[integrationID], primaryjoin="IntegrationLogResult.integrationID == Integration.id"
+        "Integration",
+        foreign_keys="[IntegrationLogResult.integration_id]",
+        primaryjoin="IntegrationLogResult.integration_id == Integration.id",
     )

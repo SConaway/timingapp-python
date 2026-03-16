@@ -21,144 +21,188 @@ def synthetic_db(tmp_path_factory: pytest.TempPathFactory) -> Path:
     conn = sqlite3.connect(str(p))
     c = conn.cursor()
 
-    # Create tables
     c.executescript("""
-        CREATE TABLE IF NOT EXISTS Device (
-            localID INTEGER PRIMARY KEY,
-            name TEXT,
-            uuid TEXT,
-            local_device INTEGER
-        );
-
-        CREATE TABLE IF NOT EXISTS Application (
-            id INTEGER PRIMARY KEY,
-            bundleIdentifier TEXT,
-            name TEXT,
-            category TEXT,
-            is_productivity_app INTEGER
-        );
-
-        CREATE TABLE IF NOT EXISTS Title (
-            id INTEGER PRIMARY KEY,
-            stringValue TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS Path (
-            id INTEGER PRIMARY KEY,
-            stringValue TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS Project (
-            id INTEGER PRIMARY KEY,
-            title TEXT,
-            color TEXT,
-            parentID INTEGER,
-            is_archived INTEGER DEFAULT 0,
+        CREATE TABLE Device (
+            localID INTEGER PRIMARY KEY NOT NULL,
+            globalID INTEGER NOT NULL,
+            macAddress BLOB,
+            displayName TEXT,
             property_bag TEXT
         );
 
-        CREATE TABLE IF NOT EXISTS AppActivity (
+        CREATE TABLE Application (
+            id INTEGER PRIMARY KEY NOT NULL,
+            bundleIdentifier TEXT,
+            executable TEXT,
+            title TEXT,
+            property_bag TEXT
+        );
+
+        CREATE TABLE Title (
             id INTEGER PRIMARY KEY,
-            startDate REAL,
-            endDate REAL,
-            deviceID INTEGER,
-            applicationID INTEGER,
+            stringValue TEXT
+        );
+
+        CREATE TABLE Path (
+            id INTEGER PRIMARY KEY,
+            stringValue TEXT
+        );
+
+        CREATE TABLE Project (
+            id INTEGER PRIMARY KEY NOT NULL,
+            title TEXT NOT NULL,
+            parentID INTEGER,
+            listPosition INTEGER NOT NULL DEFAULT 0,
+            isSample BOOLEAN NOT NULL DEFAULT 0,
+            color TEXT NOT NULL DEFAULT '#000000',
+            productivityScore REAL NOT NULL DEFAULT 0,
+            predicate BLOB,
+            ruleListPosition INTEGER NOT NULL DEFAULT 0,
+            isArchived BOOLEAN NOT NULL DEFAULT 0,
+            membershipID INTEGER,
+            property_bag TEXT
+        );
+
+        CREATE TABLE AppActivity (
+            id INTEGER PRIMARY KEY NOT NULL,
+            localDeviceID INTEGER NOT NULL,
+            startDate REAL NOT NULL,
+            endDate REAL NOT NULL,
+            applicationID INTEGER NOT NULL,
             titleID INTEGER,
             pathID INTEGER,
             projectID INTEGER,
-            deleted_at REAL
+            isDeleted BOOLEAN NOT NULL DEFAULT 0
         );
 
-        CREATE TABLE IF NOT EXISTS TaskActivity (
-            id INTEGER PRIMARY KEY,
-            startDate REAL,
-            endDate REAL,
+        CREATE TABLE TaskActivity (
+            id INTEGER PRIMARY KEY NOT NULL,
+            startDate REAL NOT NULL,
+            endDate REAL NOT NULL,
             projectID INTEGER,
-            notes TEXT,
-            property_bag TEXT,
-            deleted_at REAL
-        );
-
-        CREATE TABLE IF NOT EXISTS Integration (
-            id INTEGER PRIMARY KEY,
-            name TEXT,
-            type TEXT,
-            configuration TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS IntegrationProject (
-            id INTEGER PRIMARY KEY,
-            integrationID INTEGER,
-            projectID INTEGER,
-            external_id TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS EventSource (
-            id INTEGER PRIMARY KEY,
-            name TEXT,
-            type TEXT,
-            is_template INTEGER DEFAULT 0,
-            is_favorite INTEGER DEFAULT 0,
-            templateID INTEGER
-        );
-
-        CREATE TABLE IF NOT EXISTS Event (
-            id INTEGER PRIMARY KEY,
-            startDate REAL,
-            endDate REAL,
             title TEXT,
             notes TEXT,
-            sourceID INTEGER,
+            isDeleted BOOLEAN NOT NULL DEFAULT 0,
+            isRunning BOOLEAN NOT NULL DEFAULT 0,
             property_bag TEXT
         );
 
-        CREATE TABLE IF NOT EXISTS EventSourceTaskActivity (
+        CREATE TABLE Integration (
             id INTEGER PRIMARY KEY,
-            eventSourceID INTEGER,
-            taskActivityID INTEGER,
-            deleted_at REAL
+            origin_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            title TEXT NOT NULL,
+            icon BLOB,
+            enabled_at REAL,
+            last_updated_at REAL,
+            paused_at REAL,
+            deleted_at REAL,
+            last_modified_origin REAL,
+            last_modified_timing REAL,
+            version INTEGER NOT NULL DEFAULT 1,
+            api_status TEXT,
+            event_visibility TEXT NOT NULL DEFAULT 'all',
+            property_bag TEXT
         );
 
-        CREATE TABLE IF NOT EXISTS integration_log_result (
+        CREATE TABLE IntegrationProject (
             id INTEGER PRIMARY KEY,
-            integrationID INTEGER,
-            timestamp REAL,
-            result TEXT,
-            details TEXT
+            integration_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            origin_id TEXT,
+            timing_project_id INTEGER,
+            last_modified_origin REAL,
+            last_modified_timing REAL,
+            deleted_by_integration_at REAL,
+            hidden_at REAL,
+            property_bag TEXT
         );
 
-        CREATE TABLE IF NOT EXISTS Filter (
+        CREATE TABLE EventSource (
             id INTEGER PRIMARY KEY,
-            name TEXT,
+            integration_id INTEGER NOT NULL,
+            integration_project_id INTEGER,
+            template_id INTEGER,
+            is_template BOOL NOT NULL DEFAULT 0,
+            title TEXT NOT NULL,
+            notes TEXT,
+            event_source_type TEXT NOT NULL DEFAULT 'calendar',
+            origin_id TEXT,
+            is_favorite BOOL NOT NULL DEFAULT 0,
+            last_modified_origin REAL,
+            last_modified_timing REAL,
+            created_by_integration_at REAL,
+            deleted_by_integration_at REAL,
+            hidden_at REAL,
+            property_bag TEXT
+        );
+
+        CREATE TABLE Event (
+            id INTEGER PRIMARY KEY,
+            integration_id INTEGER NOT NULL,
+            event_source_id INTEGER NOT NULL,
+            start_date REAL NOT NULL,
+            end_date REAL,
+            origin_id TEXT,
+            event_action TEXT NOT NULL DEFAULT 'create',
+            last_modified_origin REAL,
+            last_modified_timing REAL,
+            deleted_at REAL,
+            property_bag TEXT
+        );
+
+        CREATE TABLE EventSourceTaskActivity (
+            id INTEGER PRIMARY KEY,
+            integration_id INTEGER NOT NULL,
+            event_source_id INTEGER NOT NULL,
+            task_activity_id INTEGER NOT NULL,
+            deleted_at REAL,
+            property_bag TEXT,
+            event_id INTEGER DEFAULT NULL
+        );
+
+        CREATE TABLE integration_log_result (
+            id INTEGER PRIMARY KEY,
+            integration_id INTEGER NOT NULL,
+            result INTEGER NOT NULL,
+            error_message TEXT,
+            timestamp REAL
+        );
+
+        CREATE TABLE Filter (
+            id INTEGER PRIMARY KEY NOT NULL,
             parentID INTEGER,
-            is_sample INTEGER DEFAULT 0,
-            criteria TEXT
+            listPosition INTEGER NOT NULL DEFAULT 0,
+            title TEXT NOT NULL,
+            predicate BLOB,
+            isSample BOOLEAN NOT NULL DEFAULT 0,
+            property_bag TEXT
         );
 
-        CREATE VIEW IF NOT EXISTS AppActivityWithStrings AS
+        CREATE VIEW AppActivityWithStrings AS
         SELECT
             aa.id,
+            aa.localDeviceID,
             aa.startDate,
             aa.endDate,
-            app.bundleIdentifier,
-            app.name AS app_name,
+            aa.applicationID,
+            aa.titleID,
+            aa.pathID,
             t.stringValue,
-            aa.projectID,
-            p.title AS project_title,
-            aa.deviceID
+            p.stringValue,
+            aa.projectID
         FROM AppActivity aa
-        LEFT JOIN Application app ON app.id = aa.applicationID
         LEFT JOIN Title t ON t.id = aa.titleID
-        LEFT JOIN Project p ON p.id = aa.projectID;
+        LEFT JOIN Path p ON p.id = aa.pathID
+        WHERE aa.isDeleted = 0;
     """)
 
-    # Insert synthetic data
     c.executescript("""
-        INSERT INTO Device VALUES (1, 'MacBook Pro', 'test-uuid-1', 1);
-        INSERT INTO Device VALUES (2, 'iPhone', 'test-uuid-2', 0);
+        INSERT INTO Device VALUES (1, 100, NULL, 'MacBook Pro', NULL);
+        INSERT INTO Device VALUES (2, 200, NULL, 'iPhone', NULL);
 
-        INSERT INTO Application VALUES (1, 'com.apple.Safari', 'Safari', 'Browser', 0);
-        INSERT INTO Application VALUES (2, 'com.microsoft.VSCode', 'VSCode', 'Developer Tools', 1);
+        INSERT INTO Application VALUES (1, 'com.apple.Safari', 'Safari', 'Safari', NULL);
+        INSERT INTO Application VALUES (2, 'com.microsoft.VSCode', 'VSCode', 'VSCode', NULL);
 
         INSERT INTO Title VALUES (1, 'Google - Safari');
         INSERT INTO Title VALUES (2, 'main.py - VSCode');
@@ -166,34 +210,35 @@ def synthetic_db(tmp_path_factory: pytest.TempPathFactory) -> Path:
         INSERT INTO Path VALUES (1, '/Applications/Safari.app');
         INSERT INTO Path VALUES (2, '/Applications/VSCode.app');
 
-        INSERT INTO Project VALUES (1, 'Root Project', '#FF0000', NULL, 0, '{"key": "value"}');
-        INSERT INTO Project VALUES (2, 'Child Project', '#00FF00', 1, 0, NULL);
-        INSERT INTO Project VALUES (3, 'Archived Project', '#0000FF', NULL, 1, NULL);
+        INSERT INTO Project VALUES (1, 'Root Project', NULL, 0, 0, '#FF0000', 0, NULL, 0, 0, NULL, '{"key": "value"}');
+        INSERT INTO Project VALUES (2, 'Child Project', 1, 1, 0, '#00FF00', 0, NULL, 0, 0, NULL, NULL);
+        INSERT INTO Project VALUES (3, 'Archived Project', NULL, 2, 0, '#0000FF', 0, NULL, 0, 1, NULL, NULL);
 
-        INSERT INTO AppActivity VALUES (1, 1700000000.0, 1700003600.0, 1, 1, 1, 1, 1, NULL);
-        INSERT INTO AppActivity VALUES (2, 1700000000.0, 1700003600.0, 1, 2, 2, 2, 2, 1700010000.0);
+        INSERT INTO AppActivity VALUES (1, 1, 1700000000.0, 1700003600.0, 1, 1, 1, 1, 0);
+        INSERT INTO AppActivity VALUES (2, 1, 1700000000.0, 1700003600.0, 2, 2, 2, 2, 1);
 
-        INSERT INTO TaskActivity VALUES (1, 1700000000.0, NULL, 1, 'Working on feature', '{"tag": "dev"}', NULL);
-        INSERT INTO TaskActivity VALUES (2, 1700000000.0, 1700003600.0, 2, 'Finished task', NULL, NULL);
-        INSERT INTO TaskActivity VALUES (3, 1700000000.0, 1700003600.0, 1, 'Deleted task', NULL, 1700010000.0);
+        INSERT INTO TaskActivity VALUES (1, 1700000000.0, 1700003600.0, 1, 'Feature work', 'Working on feature', 0, 1, '{"tag": "dev"}');
+        INSERT INTO TaskActivity VALUES (2, 1700000000.0, 1700003600.0, 2, 'Finished task', NULL, 0, 0, NULL);
+        INSERT INTO TaskActivity VALUES (3, 1700000000.0, 1700003600.0, 1, 'Deleted task', NULL, 1, 0, NULL);
 
-        INSERT INTO Integration VALUES (1, 'Jira', 'jira', '{}');
-        INSERT INTO IntegrationProject VALUES (1, 1, 1, 'PROJ-123');
+        INSERT INTO Integration VALUES (1, 'jira-origin', 'jira', 'Jira', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 'all', NULL);
 
-        INSERT INTO EventSource VALUES (1, 'Template Source', 'calendar', 1, 0, NULL);
-        INSERT INTO EventSource VALUES (2, 'Favorite Source', 'calendar', 0, 1, 1);
-        INSERT INTO EventSource VALUES (3, 'Regular Source', 'calendar', 0, 0, NULL);
+        INSERT INTO IntegrationProject VALUES (1, 1, 'My Project', 'PROJ', 1, NULL, NULL, NULL, NULL, NULL);
 
-        INSERT INTO Event VALUES (1, 1700000000.0, 1700003600.0, 'Test Event', 'Notes here', 2, '{"extra": "data"}');
+        INSERT INTO EventSource VALUES (1, 1, NULL, NULL, 1, 'Template Source', NULL, 'calendar', NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL);
+        INSERT INTO EventSource VALUES (2, 1, 1, 1, 0, 'Favorite Source', NULL, 'calendar', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL);
+        INSERT INTO EventSource VALUES (3, 1, NULL, NULL, 0, 'Regular Source', NULL, 'calendar', NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL);
 
-        INSERT INTO EventSourceTaskActivity VALUES (1, 2, 1, NULL);
-        INSERT INTO EventSourceTaskActivity VALUES (2, 3, 2, 1700010000.0);
+        INSERT INTO Event VALUES (1, 1, 2, 1700000000.0, 1700003600.0, NULL, 'create', NULL, NULL, NULL, '{"extra": "data"}');
 
-        INSERT INTO integration_log_result VALUES (1, 1, 1700000000.0, 'success', '{"items": 5}');
+        INSERT INTO EventSourceTaskActivity VALUES (1, 1, 2, 1, NULL, NULL, NULL);
+        INSERT INTO EventSourceTaskActivity VALUES (2, 1, 3, 2, 1700010000.0, NULL, 1);
 
-        INSERT INTO Filter VALUES (1, 'Root Filter', NULL, 0, '{"type": "all"}');
-        INSERT INTO Filter VALUES (2, 'Sample Filter', NULL, 1, '{"type": "sample"}');
-        INSERT INTO Filter VALUES (3, 'Child Filter', 1, 0, NULL);
+        INSERT INTO integration_log_result VALUES (1, 1, 0, NULL, 1700000000.0);
+
+        INSERT INTO Filter VALUES (1, NULL, 0, 'Root Filter', NULL, 0, NULL);
+        INSERT INTO Filter VALUES (2, NULL, 1, 'Sample Filter', NULL, 1, NULL);
+        INSERT INTO Filter VALUES (3, 1, 0, 'Child Filter', NULL, 0, NULL);
     """)
 
     conn.commit()
@@ -205,4 +250,6 @@ def synthetic_db(tmp_path_factory: pytest.TempPathFactory) -> Path:
 def db(synthetic_db: Path):
     """Return an opened Database backed by the synthetic test DB."""
     from timingapp._database import Database
-    return Database(synthetic_db)
+    database = Database(synthetic_db)
+    yield database
+    database.close()

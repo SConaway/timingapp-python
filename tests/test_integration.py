@@ -12,13 +12,13 @@ class TestEventSource:
         with db.session() as sess:
             templates = sess.scalars(EventSource.templates()).all()
             assert len(templates) == 1
-            assert templates[0].name == "Template Source"
+            assert templates[0].title == "Template Source"
 
     def test_favorites_scope(self, db: Database):
         with db.session() as sess:
             favorites = sess.scalars(EventSource.favorites()).all()
             assert len(favorites) == 1
-            assert favorites[0].name == "Favorite Source"
+            assert favorites[0].title == "Favorite Source"
 
     def test_template_relationship(self, db: Database):
         with db.session() as sess:
@@ -46,17 +46,17 @@ class TestEvent:
             from datetime import timezone
             event = sess.get(Event, 1)
             assert event is not None
-            assert event.title == "Test Event"
-            assert event.startDate is not None
-            assert event.startDate.tzinfo == timezone.utc
+            assert event.event_action == "create"
+            assert event.start_date is not None
+            assert event.start_date.tzinfo == timezone.utc
             assert event.property_bag == {"extra": "data"}
 
-    def test_source_relationship(self, db: Database):
+    def test_event_source_relationship(self, db: Database):
         with db.session() as sess:
             event = sess.get(Event, 1)
             assert event is not None
-            assert event.source is not None
-            assert event.source.name == "Favorite Source"
+            assert event.event_source is not None
+            assert event.event_source.title == "Favorite Source"
 
 
 class TestEventSourceTaskActivity:
@@ -78,13 +78,13 @@ class TestIntegrationProject:
         with db.session() as sess:
             ips = sess.scalars(select(IntegrationProject)).all()
             assert len(ips) == 1
-            assert ips[0].external_id == "PROJ-123"
+            assert ips[0].origin_id == "PROJ"
 
     def test_relationships(self, db: Database):
         with db.session() as sess:
             ip = sess.get(IntegrationProject, 1)
             assert ip is not None
             assert ip.integration is not None
-            assert ip.integration.name == "Jira"
+            assert ip.integration.title == "Jira"
             assert ip.project is not None
             assert ip.project.title == "Root Project"
